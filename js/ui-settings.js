@@ -13,6 +13,9 @@ function validatePackageInput(pkg) {
   const errors = {};
   if (!(pkg.hoursOnSite >= 0)) errors.hoursOnSite = 'Darf nicht negativ sein.';
   if (!(pkg.travels >= 0)) errors.travels = 'Darf nicht negativ sein.';
+  if (pkg.hoursPerRoundTrip != null && !(pkg.hoursPerRoundTrip >= 0)) {
+    errors.hoursPerRoundTrip = 'Darf nicht negativ sein.';
+  }
   if (!pkg.label || !pkg.label.trim()) errors.label = 'Bezeichnung darf nicht leer sein.';
   return { valid: Object.keys(errors).length === 0, errors };
 }

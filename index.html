@@ -4,12 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HM Offers — Kalkulationstool</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f1c2e'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='14' font-weight='bold' fill='%23fff' text-anchor='middle'%3EHM%3C/text%3E%3C/svg%3E" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+
   <script defer src="vendor/alpine.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
   <script src="vendor/jspdf.plugin.autotable.min.js"></script>
 
+  <script src="js/countries.js"></script>
   <script src="js/config.js"></script>
   <script src="js/state.js"></script>
   <script src="js/calc.js"></script>
@@ -23,68 +26,63 @@
   <script src="js/ui-dashboard.js"></script>
   <script src="js/ui-settings.js"></script>
   <script src="js/app.js"></script>
-
-  <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen" x-data="hmApp">
+<body x-data="hmApp">
 
-  <header class="bg-slate-800 text-white px-6 py-4 shadow">
-    <div class="max-w-5xl mx-auto flex items-center justify-between">
+  <header class="topbar">
+    <div class="topbar-inner">
       <div>
-        <h1 class="text-xl font-semibold">HM Offers</h1>
-        <p class="text-slate-300 text-sm">Kalkulationstool für HM-Beratungspakete</p>
+        <h1 class="brand-title">HM Offers</h1>
+        <p class="brand-subtitle">Angebotskalkulation · Beratungspakete</p>
       </div>
-      <nav class="flex gap-2">
-        <button
-          class="px-4 py-2 rounded text-sm font-medium"
-          :class="activeView === 'dashboard' ? 'bg-white text-slate-800' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'"
-          @click="activeView = 'dashboard'"
-        >Kalkulation</button>
-        <button
-          class="px-4 py-2 rounded text-sm font-medium"
-          :class="activeView === 'settings' ? 'bg-white text-slate-800' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'"
-          @click="activeView = 'settings'"
-        >Einstellungen</button>
+      <nav class="nav-tabs">
+        <button :class="activeView === 'dashboard' ? 'active' : ''" @click="activeView = 'dashboard'">Kalkulation</button>
+        <button :class="activeView === 'settings' ? 'active' : ''" @click="activeView = 'settings'">Einstellungen</button>
       </nav>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-6 py-8">
+  <datalist id="countrySuggestions">
+    <template x-for="c in countrySuggestions" :key="c">
+      <option :value="c"></option>
+    </template>
+  </datalist>
 
-    <!-- ===================== DASHBOARD VIEW ===================== -->
+  <main class="container">
+
+    <!-- ===================== KALKULATION ===================== -->
     <section x-show="activeView === 'dashboard'" x-cloak>
 
-      <!-- Projektauswahl -->
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Projektauswahl</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Kunde / Projekttitel</label>
-            <input type="text" class="w-full border rounded px-3 py-2" x-model="offer.projectTitle" @change="persistOffer()" placeholder="z.B. Projekt Alpha" />
+      <div class="card">
+        <h2 class="card-title">Projektdaten</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Projekttitel</label>
+            <input type="text" x-model="offer.projectTitle" @change="persistOffer()" placeholder="z. B. Projekt Alpha" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Kunde (Name)</label>
-            <input type="text" class="w-full border rounded px-3 py-2" x-model="offer.customerName" @change="persistOffer()" />
+          <div class="field">
+            <label>Kunde</label>
+            <input type="text" x-model="offer.customerName" @change="persistOffer()" placeholder="Firmenname" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Zielland</label>
-            <input type="text" class="w-full border rounded px-3 py-2" x-model="offer.country" @change="persistOffer()" placeholder="z.B. Spanien" />
+          <div class="field">
+            <label>Zielland</label>
+            <input type="text" list="countrySuggestions" x-model="offer.country" @change="onCountryChange()" placeholder="z. B. Spanien" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Zielstadt (optional)</label>
-            <input type="text" class="w-full border rounded px-3 py-2" x-model="offer.city" @change="persistOffer()" placeholder="z.B. Madrid" />
+          <div class="field">
+            <label>Zielstadt <span style="font-weight:400">(optional)</span></label>
+            <input type="text" x-model="offer.city" @change="persistOffer()" placeholder="z. B. Madrid" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Reisezeitraum von (optional)</label>
-            <input type="date" class="w-full border rounded px-3 py-2" x-model="offer.travelDateRange.from" @change="persistOffer()" />
+          <div class="field">
+            <label>Reisezeitraum von <span style="font-weight:400">(optional)</span></label>
+            <input type="date" x-model="offer.travelDateRange.from" @change="persistOffer()" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Reisezeitraum bis (optional)</label>
-            <input type="date" class="w-full border rounded px-3 py-2" x-model="offer.travelDateRange.to" @change="persistOffer()" />
+          <div class="field">
+            <label>Reisezeitraum bis <span style="font-weight:400">(optional)</span></label>
+            <input type="date" x-model="offer.travelDateRange.to" @change="persistOffer()" />
           </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-slate-600 mb-1">Beratungspaket</label>
-            <select class="w-full border rounded px-3 py-2" x-model="offer.packageId" @change="persistOffer()" x-init="$nextTick(() => { $el.value = offer.packageId })">
+          <div class="field span-2">
+            <label>Beratungspaket</label>
+            <select x-model="offer.packageId" @change="persistOffer()" x-init="$nextTick(() => { $el.value = offer.packageId })">
               <template x-for="pkg in packages.list" :key="pkg.id">
                 <option :value="pkg.id" x-text="pkg.label"></option>
               </template>
@@ -92,207 +90,255 @@
           </div>
         </div>
 
-        <div class="mt-4">
-          <button
-            class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium px-4 py-2 rounded flex items-center gap-2"
-            @click="runSmartFillAction()"
-            :disabled="aiLoading"
-          >
-            <span x-show="!aiLoading">✨ KI-Reisekosten live abrufen</span>
-            <span x-show="aiLoading">Wird ermittelt…</span>
+        <div class="actions-row">
+          <button class="btn btn-primary" @click="runSmartFillAction()" :disabled="aiLoading">
+            <span class="spinner" x-show="aiLoading"></span>
+            <span x-text="aiLoading ? 'Kosten werden ermittelt …' : 'Kosten ermitteln'"></span>
           </button>
-
-          <div
-            x-show="aiMessage"
-            x-cloak
-            class="mt-3 px-4 py-2 rounded text-sm"
-            :class="aiMessage && aiMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'"
-            x-text="aiMessage && aiMessage.text"
-          ></div>
+          <span style="font-size:0.78rem;color:var(--text-faint)">Ermittelt Spesensatz, Flug-, Hotel- und Mietwagenkosten per KI-Recherche. Alle Werte bleiben editierbar.</span>
         </div>
+
+        <div x-show="aiMessage" x-cloak class="notice" :class="aiMessage && aiMessage.type === 'error' ? 'notice-error' : 'notice-info'" x-text="aiMessage && aiMessage.text"></div>
       </div>
 
-      <!-- Live-Kalkulations-Dashboard -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold mb-4">Live-Kalkulation</h2>
+      <div class="card">
+        <h2 class="card-title">Kalkulation</h2>
 
-        <div class="text-sm text-slate-500 mb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-          <div>Vor-Ort-Std.: <span class="font-medium text-slate-700" x-text="formatNumber(packageMetrics.hoursOnSite)"></span></div>
-          <div>Reisezeit-Std.: <span class="font-medium text-slate-700" x-text="formatNumber(packageMetrics.travelHours)"></span></div>
-          <div>Einsätze: <span class="font-medium text-slate-700" x-text="packageMetrics.travels"></span></div>
-          <div>Gesamttage: <span class="font-medium text-slate-700" x-text="formatNumber(packageMetrics.totalDays)"></span></div>
+        <div class="metrics-strip">
+          <div class="metric"><span class="metric-label">Vor-Ort-Stunden</span><span class="metric-value" x-text="formatNumber(packageMetrics.hoursOnSite)"></span></div>
+          <div class="metric"><span class="metric-label">Reisezeit-Stunden</span><span class="metric-value" x-text="formatNumber(packageMetrics.travelHours)"></span></div>
+          <div class="metric"><span class="metric-label">Einsätze</span><span class="metric-value" x-text="packageMetrics.travels"></span></div>
+          <div class="metric"><span class="metric-label">Gesamttage</span><span class="metric-value" x-text="formatNumber(packageMetrics.totalDays)"></span></div>
         </div>
 
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-slate-500 border-b">
-              <th class="py-2 font-medium w-8"></th>
-              <th class="py-2 font-medium">Position</th>
-              <th class="py-2 font-medium">Eingabewert</th>
-              <th class="py-2 font-medium text-right">Betrag</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="item in lineItems" :key="item.key">
-              <tr class="border-b last:border-0">
-                <td class="py-2" :title="iconTitle(item.icon)" x-text="iconGlyph(item.icon)"></td>
-                <td class="py-2" x-text="item.label"></td>
-                <td class="py-2">
-                  <template x-if="item.editable">
-                    <input
-                      type="number"
-                      step="0.01"
-                      class="w-32 border rounded px-2 py-1"
-                      :value="item.inputValue"
-                      :placeholder="item.inputLabel"
-                      @change="onCostFieldInput(item.field, $event.target.value)"
-                      :title="item.rationale || ''"
-                    />
-                  </template>
-                </td>
-                <td class="py-2 text-right font-medium" x-text="formatCurrency(item.amount)"></td>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Position</th>
+                <th>Quelle</th>
+                <th>Eingabewert</th>
+                <th class="num">Betrag</th>
               </tr>
-            </template>
-          </tbody>
-          <tfoot>
-            <tr class="border-t">
-              <td colspan="3" class="py-2 text-slate-600">Zwischensumme</td>
-              <td class="py-2 text-right font-medium" x-text="formatCurrency(calcResult.zwischensumme)"></td>
-            </tr>
-            <tr>
-              <td colspan="3" class="py-2 text-slate-600">
-                Aufschlag (<span x-text="formatNumber(settings.marginPercent, 0)"></span>%)
-              </td>
-              <td class="py-2 text-right font-medium" x-text="formatCurrency(calcResult.aufschlag)"></td>
-            </tr>
-            <tr class="bg-slate-800 text-white">
-              <td colspan="3" class="py-3 px-2 font-semibold rounded-l">Finaler VK-Preis</td>
-              <td class="py-3 px-2 text-right font-bold text-lg rounded-r" x-text="formatCurrency(calcResult.vkPreis)"></td>
-            </tr>
-          </tfoot>
-        </table>
+            </thead>
+            <tbody>
+              <template x-for="item in lineItems" :key="item.key">
+                <tr>
+                  <td x-text="item.label"></td>
+                  <td>
+                    <span class="badge" :class="'badge-' + item.icon" :title="item.rationale || sourceTitle(item.icon)" x-text="sourceBadge(item.icon)"></span>
+                  </td>
+                  <td>
+                    <template x-if="item.editable">
+                      <input
+                        type="number"
+                        step="0.01"
+                        style="width:130px"
+                        :value="item.inputValue"
+                        :placeholder="item.inputLabel"
+                        @change="onCostFieldInput(item.field, $event.target.value)"
+                        :title="item.rationale || ''"
+                      />
+                    </template>
+                  </td>
+                  <td class="num" x-text="formatCurrency(item.amount)"></td>
+                </tr>
+              </template>
+            </tbody>
+            <tfoot>
+              <tr class="totals-row">
+                <td colspan="3" class="muted">Zwischensumme</td>
+                <td class="num" x-text="formatCurrency(calcResult.zwischensumme)"></td>
+              </tr>
+              <tr class="totals-row">
+                <td colspan="3" class="muted">VK-Anpassung (<span x-text="formatNumber(settings.marginPercent, 0)"></span>%)</td>
+                <td class="num" x-text="formatCurrency(calcResult.aufschlag)"></td>
+              </tr>
+              <tr class="vk-row">
+                <td colspan="3">Finaler Verkaufspreis</td>
+                <td class="num" x-text="formatCurrency(calcResult.vkPreis)"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
 
-        <div class="mt-6 flex items-center justify-between">
-          <label class="flex items-center gap-2 text-sm text-slate-600">
+        <div class="actions-row">
+          <label class="checkbox-label">
             <input type="checkbox" x-model="offer.showDetailedCosts" @change="persistOffer()" />
             Detaillierte Kostenaufstellung im PDF anzeigen
           </label>
-          <button class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded" @click="exportPdf()">
-            Angebot als PDF exportieren
-          </button>
+          <button class="btn btn-dark" @click="exportPdf()">Angebot als PDF exportieren</button>
         </div>
       </div>
     </section>
 
-    <!-- ===================== SETTINGS VIEW ===================== -->
+    <!-- ===================== EINSTELLUNGEN ===================== -->
     <section x-show="activeView === 'settings'" x-cloak>
 
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Globale Werte</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Stundensatz (EUR)</label>
-            <input type="number" step="1" class="w-full border rounded px-3 py-2" x-model.number="settings.hourlyRate" @change="persistSettings()" />
-            <p class="text-xs text-red-600 mt-1" x-show="settingsErrors.hourlyRate" x-text="settingsErrors.hourlyRate"></p>
+      <div class="card">
+        <h2 class="card-title">Globale Parameter</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Stundensatz (EUR)</label>
+            <input type="number" step="1" x-model.number="settings.hourlyRate" @change="persistSettings()" />
+            <p class="field-error" x-show="settingsErrors.hourlyRate" x-text="settingsErrors.hourlyRate"></p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Gewinnaufschlag / Marge (%)</label>
-            <input type="number" step="1" class="w-full border rounded px-3 py-2" x-model.number="settings.marginPercent" @change="persistSettings()" />
-            <p class="text-xs text-red-600 mt-1" x-show="settingsErrors.marginPercent" x-text="settingsErrors.marginPercent"></p>
+          <div class="field">
+            <label>VK-Anpassung (%)</label>
+            <input type="number" step="1" x-model.number="settings.marginPercent" @change="persistSettings()" />
+            <p class="field-error" x-show="settingsErrors.marginPercent" x-text="settingsErrors.marginPercent"></p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Arbeitsstunden pro Tag</label>
-            <input type="number" step="1" class="w-full border rounded px-3 py-2" x-model.number="settings.hoursPerDay" @change="persistSettings()" />
-            <p class="text-xs text-red-600 mt-1" x-show="settingsErrors.hoursPerDay" x-text="settingsErrors.hoursPerDay"></p>
+          <div class="field">
+            <label>Arbeitsstunden pro Tag</label>
+            <input type="number" step="1" x-model.number="settings.hoursPerDay" @change="persistSettings()" />
+            <p class="field-error" x-show="settingsErrors.hoursPerDay" x-text="settingsErrors.hoursPerDay"></p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Reisestunden pro Hin-/Rückreise</label>
-            <input type="number" step="1" class="w-full border rounded px-3 py-2" x-model.number="settings.hoursPerRoundTrip" @change="persistSettings()" />
-            <p class="text-xs text-red-600 mt-1" x-show="settingsErrors.hoursPerRoundTrip" x-text="settingsErrors.hoursPerRoundTrip"></p>
+          <div class="field">
+            <label>Standard-Reisestunden pro Hin-/Rückreise</label>
+            <input type="number" step="1" x-model.number="settings.hoursPerRoundTrip" @change="persistSettings()" />
+            <p class="field-error" x-show="settingsErrors.hoursPerRoundTrip" x-text="settingsErrors.hoursPerRoundTrip"></p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Standard-Abflugort</label>
-            <input type="text" class="w-full border rounded px-3 py-2" x-model="settings.defaultDepartureAirport" @change="persistSettings()" />
+          <div class="field">
+            <label>Standard-Abflugort</label>
+            <input type="text" x-model="settings.defaultDepartureAirport" @change="persistSettings()" placeholder="z. B. FRA" />
           </div>
         </div>
-        <button class="mt-4 text-sm text-slate-500 hover:text-slate-700 underline" @click="resetSettings()">Auf Standardwerte zurücksetzen</button>
+        <div class="actions-row">
+          <button class="btn-link" @click="resetSettings()">Auf Standardwerte zurücksetzen</button>
+        </div>
       </div>
 
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Beratungspakete</h2>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-slate-500 border-b">
-              <th class="py-2 font-medium">Bezeichnung</th>
-              <th class="py-2 font-medium">Hours On Site</th>
-              <th class="py-2 font-medium">Travels</th>
-              <th class="py-2 font-medium">Days On Site</th>
-              <th class="py-2 font-medium">Travel Hours</th>
-              <th class="py-2 font-medium">Total Hours</th>
-              <th class="py-2 font-medium">Total Days</th>
-              <th class="py-2 font-medium w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="pkg in packages.list" :key="pkg.id">
-              <tr class="border-b last:border-0">
-                <td class="py-2"><input type="text" class="w-28 border rounded px-2 py-1" x-model="pkg.label" @change="persistPackages()" /></td>
-                <td class="py-2"><input type="number" step="0.1" class="w-24 border rounded px-2 py-1" x-model.number="pkg.hoursOnSite" @change="persistPackages()" /></td>
-                <td class="py-2"><input type="number" step="1" class="w-20 border rounded px-2 py-1" x-model.number="pkg.travels" @change="persistPackages()" /></td>
-                <td class="py-2 text-slate-500" x-text="formatNumber(derivePackageMetrics(pkg, settings).daysOnSite)"></td>
-                <td class="py-2 text-slate-500" x-text="formatNumber(derivePackageMetrics(pkg, settings).travelHours)"></td>
-                <td class="py-2 text-slate-500" x-text="formatNumber(derivePackageMetrics(pkg, settings).totalHours)"></td>
-                <td class="py-2 text-slate-500" x-text="formatNumber(derivePackageMetrics(pkg, settings).totalDays)"></td>
-                <td class="py-2"><button class="text-red-500 hover:text-red-700" @click="removePackage(pkg.id)" title="Paket löschen">✕</button></td>
+      <div class="card">
+        <h2 class="card-title">Beratungspakete</h2>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Bezeichnung</th>
+                <th>Std. vor Ort</th>
+                <th>Reisen</th>
+                <th>Std./Reise</th>
+                <th class="num">Tage vor Ort</th>
+                <th class="num">Reisestunden</th>
+                <th class="num">Gesamtstunden</th>
+                <th class="num">Gesamttage</th>
+                <th></th>
               </tr>
-            </template>
-          </tbody>
-        </table>
-        <div class="mt-4 flex gap-4">
-          <button class="text-sm bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded" @click="addPackage()">+ Paket hinzufügen</button>
-          <button class="text-sm text-slate-500 hover:text-slate-700 underline" @click="resetPackages()">Auf Standardpakete zurücksetzen</button>
+            </thead>
+            <tbody>
+              <template x-for="pkg in packages.list" :key="pkg.id">
+                <tr>
+                  <td><input type="text" style="width:120px" x-model="pkg.label" @change="persistPackages()" /></td>
+                  <td><input type="number" step="0.1" style="width:90px" x-model.number="pkg.hoursOnSite" @change="persistPackages()" /></td>
+                  <td><input type="number" step="1" style="width:70px" x-model.number="pkg.travels" @change="persistPackages()" /></td>
+                  <td><input type="number" step="1" style="width:80px" x-model.number="pkg.hoursPerRoundTrip" @change="persistPackages()" /></td>
+                  <td class="num muted" x-text="formatNumber(derivePackageMetrics(pkg, settings).daysOnSite)"></td>
+                  <td class="num muted" x-text="formatNumber(derivePackageMetrics(pkg, settings).travelHours)"></td>
+                  <td class="num muted" x-text="formatNumber(derivePackageMetrics(pkg, settings).totalHours)"></td>
+                  <td class="num muted" x-text="formatNumber(derivePackageMetrics(pkg, settings).totalDays)"></td>
+                  <td><button class="btn-remove" @click="removePackage(pkg.id)" title="Paket löschen">✕</button></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-secondary" @click="addPackage()">+ Paket hinzufügen</button>
+          <button class="btn-link" @click="resetPackages()">Auf Standardpakete zurücksetzen</button>
         </div>
       </div>
 
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold mb-4">KI- &amp; API-Einstellungen</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Provider</label>
-            <select class="w-full border rounded px-3 py-2" x-model="settings.ai.provider" @change="persistSettings()" x-init="$nextTick(() => { $el.value = settings.ai.provider })">
+      <div class="card">
+        <h2 class="card-title">Spesen-Datenbank (BMF-Verpflegungsmehraufwand)</h2>
+
+        <template x-if="spesen.list.length === 0">
+          <p style="font-size:0.87rem;color:var(--text-muted)">
+            Noch keine Spesensätze gespeichert. Sätze werden automatisch abgelegt, wenn Sie in der Kalkulation
+            "Kosten ermitteln" nutzen — oder fügen Sie unten Länder hinzu und aktualisieren Sie die Sätze per KI.
+          </p>
+        </template>
+
+        <div class="table-scroll" x-show="spesen.list.length > 0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Land</th>
+                <th>Satz (EUR/Tag)</th>
+                <th>Quelle / Hinweis</th>
+                <th>Stand</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="entry in spesen.list" :key="entry.country">
+                <tr>
+                  <td x-text="entry.country"></td>
+                  <td>
+                    <input type="number" step="0.01" style="width:100px" :value="entry.value" @change="onSpesenRateInput(entry.country, $event.target.value)" />
+                  </td>
+                  <td class="muted" style="font-size:0.8rem" x-text="entry.rationale || '–'"></td>
+                  <td class="muted" style="font-size:0.8rem" x-text="formatDate(entry.lastUpdated)"></td>
+                  <td><button class="btn-remove" @click="removeSpesen(entry.country)" title="Eintrag löschen">✕</button></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="actions-row">
+          <div class="inline-form">
+            <input type="text" list="countrySuggestions" x-model="newSpesenCountry" @keydown.enter="addSpesenCountry()" placeholder="Land hinzufügen …" />
+            <button class="btn btn-secondary" @click="addSpesenCountry()">Hinzufügen</button>
+          </div>
+          <button class="btn btn-primary" @click="updateAllSpesen()" :disabled="spesenLoading">
+            <span class="spinner" x-show="spesenLoading"></span>
+            <span x-text="spesenLoading ? 'Sätze werden aktualisiert …' : 'Spesensätze per KI aktualisieren'"></span>
+          </button>
+        </div>
+
+        <div x-show="spesenMessage" x-cloak class="notice" :class="spesenMessage && spesenMessage.type === 'error' ? 'notice-error' : 'notice-info'" x-text="spesenMessage && spesenMessage.text"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">KI &amp; API</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Provider</label>
+            <select x-model="settings.ai.provider" @change="persistSettings()" x-init="$nextTick(() => { $el.value = settings.ai.provider })">
               <template x-for="p in aiProviderOptions" :key="p">
                 <option :value="p" x-text="aiProviderLabels[p]"></option>
               </template>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600 mb-1">Modell</label>
-            <input type="text" class="w-full border rounded px-3 py-2" x-model="settings.ai.model" @change="persistSettings()" />
+          <div class="field">
+            <label>Modell</label>
+            <input type="text" x-model="settings.ai.model" @change="persistSettings()" />
           </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-slate-600 mb-1">API-Key</label>
-            <div class="flex gap-2">
-              <input :type="showApiKey ? 'text' : 'password'" class="w-full border rounded px-3 py-2" x-model="settings.ai.apiKey" @change="persistSettings()" placeholder="sk-ant-..." />
-              <button type="button" class="px-3 py-2 border rounded text-sm" @click="showApiKey = !showApiKey" x-text="showApiKey ? 'Verbergen' : 'Anzeigen'"></button>
+          <div class="field span-2">
+            <label>API-Key</label>
+            <div class="api-key-row">
+              <input :type="showApiKey ? 'text' : 'password'" x-model="settings.ai.apiKey" @change="persistSettings()" placeholder="sk-ant-…" />
+              <button type="button" class="btn btn-secondary" @click="showApiKey = !showApiKey" x-text="showApiKey ? 'Verbergen' : 'Anzeigen'"></button>
             </div>
           </div>
-          <div class="md:col-span-2">
-            <label class="flex items-center gap-2 text-sm text-slate-600">
+          <div class="field span-2">
+            <label class="checkbox-label">
               <input type="checkbox" x-model="settings.ai.enableWebSearch" @change="persistSettings()" />
-              Web-Search aktivieren (sofern vom Provider unterstützt)
+              Web-Recherche aktivieren (sofern vom Provider unterstützt)
             </label>
           </div>
         </div>
 
-        <div class="mt-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded p-4">
-          Ihr API-Key wird nur lokal in Ihrem Browser (localStorage) gespeichert und bei jeder KI-Anfrage direkt an den
-          Anbieter gesendet. Er ist im Klartext im Speicher Ihres Browsers sowie in Netzwerk-Anfragen sichtbar.
-          Nutzen Sie ausschließlich einen persönlichen Schlüssel und teilen Sie dieses Tool nicht mit Dritten, ohne den
-          Schlüssel zu entfernen.
+        <div class="notice notice-warn">
+          Ihr API-Key wird ausschließlich lokal in Ihrem Browser (localStorage) gespeichert und bei jeder KI-Anfrage
+          direkt an den Anbieter gesendet. Er ist im Klartext im Browser-Speicher sowie in Netzwerk-Anfragen sichtbar.
+          Verwenden Sie nur einen persönlichen Schlüssel und geben Sie dieses Tool nicht mit hinterlegtem Schlüssel weiter.
         </div>
       </div>
     </section>
 
   </main>
+
+  <p class="footer-note">HM Offers · Alle Daten werden lokal in Ihrem Browser gespeichert.</p>
 </body>
 </html>

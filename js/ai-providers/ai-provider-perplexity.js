@@ -4,4 +4,7 @@ const PerplexityProvider = {
   async fetchEstimate() {
     throw new AIProviderError('Provider "Perplexity" ist noch nicht implementiert.');
   },
+  async fetchSpesenRates() {
+    throw new AIProviderError('Provider "Perplexity" ist noch nicht implementiert.');
+  },
 };

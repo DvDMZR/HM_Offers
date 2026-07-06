@@ -27,11 +27,20 @@ Er ist im Klartext im Browser-Speicher und in Netzwerk-Requests (DevTools) sicht
 Verwenden Sie nur einen persönlichen Schlüssel und geben Sie dieses Tool nicht mit
 eingetragenem Key an Dritte weiter oder committen Sie ihn niemals ins Repository.
 
+## Spesen-Datenbank
+
+Ermittelte BMF-Spesensätze werden automatisch je Land gespeichert und beim nächsten
+Angebot für dasselbe Land direkt übernommen. Unter **Einstellungen →
+Spesen-Datenbank** lassen sich Länder hinzufügen, Sätze manuell korrigieren und alle
+gespeicherten Sätze per Knopfdruck über die KI aktualisieren.
+
 ## Persistenz
 
-Einstellungen, Paketdefinitionen und das aktuelle Angebot werden automatisch in
-`localStorage` gespeichert und beim erneuten Öffnen wiederhergestellt. Es gibt keine
-Datenbank und kein Backend.
+Einstellungen, Paketdefinitionen, Spesensätze und das aktuelle Angebot werden
+automatisch in `localStorage` gespeichert und beim erneuten Öffnen wiederhergestellt.
+Es gibt keine Datenbank und kein Backend. Das Tool lädt keine externen Ressourcen —
+alle Bibliotheken liegen lokal im Ordner `vendor/`; nur die KI-Abfrage benötigt eine
+Internetverbindung.
 
 ## Export
 

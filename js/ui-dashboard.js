@@ -64,9 +64,10 @@ function buildLineItems(packageMetrics, costInputs, calcResult) {
   ];
 }
 
-const ICON_GLYPH = { ai: '✨', manual: '✏️', calc: '🧮' };
-const ICON_TITLE = {
-  ai: 'Von der KI ermittelt',
+const SOURCE_BADGE = { ai: 'KI', manual: 'Manuell', calc: 'Kalkuliert', db: 'Gespeichert' };
+const SOURCE_TITLE = {
+  ai: 'Per KI-Recherche ermittelt',
   manual: 'Manuell eingegeben',
-  calc: 'Berechnet',
+  calc: 'Aus Paket und Stundensatz berechnet',
+  db: 'Aus der gespeicherten Spesen-Datenbank übernommen',
 };

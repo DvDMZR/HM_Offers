@@ -4,4 +4,7 @@ const OpenAIProvider = {
   async fetchEstimate() {
     throw new AIProviderError('Provider "OpenAI" ist noch nicht implementiert.');
   },
+  async fetchSpesenRates() {
+    throw new AIProviderError('Provider "OpenAI" ist noch nicht implementiert.');
+  },
 };

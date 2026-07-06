@@ -66,6 +66,13 @@ const HMState = {
     return defaults;
   },
 
+  loadSpesen() {
+    return safeReadJSON(STORAGE_KEYS.SPESEN, JSON.parse(JSON.stringify(DEFAULT_SPESEN)));
+  },
+  saveSpesen(spesen) {
+    return safeWriteJSON(STORAGE_KEYS.SPESEN, spesen);
+  },
+
   loadCurrentOffer() {
     return safeReadJSON(STORAGE_KEYS.CURRENT_OFFER, defaultCurrentOffer());
   },

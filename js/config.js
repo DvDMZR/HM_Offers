@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   SETTINGS: 'hm_offers.settings.v1',
   PACKAGES: 'hm_offers.packages.v1',
   CURRENT_OFFER: 'hm_offers.currentOffer.v1',
+  SPESEN: 'hm_offers.spesen.v1',
 };
 
 const AI_PROVIDERS = {
@@ -45,11 +46,17 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_PACKAGES = {
   schemaVersion: 1,
   list: [
-    { id: 'package4', label: 'Package 4', hoursOnSite: 22, travels: 1 },
-    { id: 'package1', label: 'Package 1', hoursOnSite: 57.5, travels: 1 },
-    { id: 'package2', label: 'Package 2', hoursOnSite: 108, travels: 2 },
-    { id: 'package3', label: 'Package 3', hoursOnSite: 125, travels: 3 },
+    { id: 'package4', label: 'Package 4', hoursOnSite: 22, travels: 1, hoursPerRoundTrip: 20 },
+    { id: 'package1', label: 'Package 1', hoursOnSite: 57.5, travels: 1, hoursPerRoundTrip: 20 },
+    { id: 'package2', label: 'Package 2', hoursOnSite: 108, travels: 2, hoursPerRoundTrip: 20 },
+    { id: 'package3', label: 'Package 3', hoursOnSite: 125, travels: 3, hoursPerRoundTrip: 20 },
   ],
+};
+
+// Gespeicherte Spesensätze (BMF Verpflegungsmehraufwand) je Land
+const DEFAULT_SPESEN = {
+  schemaVersion: 1,
+  list: [], // { country, value, rationale, lastUpdated }
 };
 
 function emptyCostField() {
