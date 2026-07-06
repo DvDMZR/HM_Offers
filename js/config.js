@@ -16,16 +16,23 @@ const AI_PROVIDERS = {
 
 const AI_PROVIDER_LABELS = {
   [AI_PROVIDERS.ANTHROPIC]: 'Anthropic (Claude)',
+  [AI_PROVIDERS.GEMINI]: 'Google Gemini',
   [AI_PROVIDERS.OPENAI]: 'OpenAI (bald verfügbar)',
   [AI_PROVIDERS.PERPLEXITY]: 'Perplexity (bald verfügbar)',
-  [AI_PROVIDERS.GEMINI]: 'Google Gemini (bald verfügbar)',
 };
 
 const AI_PROVIDER_DEFAULT_MODELS = {
   [AI_PROVIDERS.ANTHROPIC]: 'claude-sonnet-4-5',
   [AI_PROVIDERS.OPENAI]: 'gpt-4o',
   [AI_PROVIDERS.PERPLEXITY]: 'sonar-pro',
-  [AI_PROVIDERS.GEMINI]: 'gemini-2.5-pro',
+  [AI_PROVIDERS.GEMINI]: 'gemini-2.5-flash',
+};
+
+const AI_PROVIDER_KEY_PLACEHOLDERS = {
+  [AI_PROVIDERS.ANTHROPIC]: 'sk-ant-…',
+  [AI_PROVIDERS.GEMINI]: 'AIza…',
+  [AI_PROVIDERS.OPENAI]: 'sk-…',
+  [AI_PROVIDERS.PERPLEXITY]: 'pplx-…',
 };
 
 const DEFAULT_SETTINGS = {

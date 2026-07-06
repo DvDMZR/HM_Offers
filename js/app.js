@@ -15,8 +15,21 @@ document.addEventListener('alpine:init', () => {
     spesenMessage: null,
     newSpesenCountry: '',
     showApiKey: false,
-    aiProviderOptions: Object.values(AI_PROVIDERS),
+    aiProviderOptions: Object.keys(AI_PROVIDER_LABELS),
     aiProviderLabels: AI_PROVIDER_LABELS,
+
+    get apiKeyPlaceholder() {
+      return AI_PROVIDER_KEY_PLACEHOLDERS[this.settings.ai.provider] || 'API-Key';
+    },
+    // Beim Provider-Wechsel das Modell auf den Provider-Default umstellen, sofern
+    // der Nutzer kein eigenes Modell eingetragen hat (d.h. ein bekannter Default steht drin)
+    onProviderChange() {
+      const knownDefaults = Object.values(AI_PROVIDER_DEFAULT_MODELS);
+      if (!this.settings.ai.model || knownDefaults.includes(this.settings.ai.model)) {
+        this.settings.ai.model = AI_PROVIDER_DEFAULT_MODELS[this.settings.ai.provider] || '';
+      }
+      this.persistSettings();
+    },
 
     // --- Ableitungen ---
     get selectedPackage() {
