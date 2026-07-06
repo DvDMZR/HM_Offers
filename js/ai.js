@@ -68,3 +68,55 @@ async function runSmartFill({ settings, country, city, travelDateRange }) {
     return { ok: false, message: `KI-Abfrage fehlgeschlagen: ${message} Bitte Werte manuell prüfen/eintragen.` };
   }
 }
+
+// Aktualisiert die BMF-Spesensätze für eine Liste von Ländern per KI-Abfrage.
+// Gibt { ok, results?: { land: {value, rationale} }, message? } zurück — wirft nie.
+async function runSpesenUpdate({ settings, countries }) {
+  const aiSettings = settings.ai || {};
+
+  if (!aiSettings.apiKey) {
+    return {
+      ok: false,
+      message: 'Kein API-Key hinterlegt — bitte im Bereich "KI & API" eintragen.',
+    };
+  }
+  if (!countries || countries.length === 0) {
+    return { ok: false, message: 'Keine Länder in der Spesen-Datenbank — bitte zuerst ein Land hinzufügen.' };
+  }
+
+  const provider = AI_PROVIDER_REGISTRY[aiSettings.provider];
+  if (!provider) {
+    return { ok: false, message: `Unbekannter KI-Provider: ${aiSettings.provider}` };
+  }
+
+  try {
+    const parsed = await provider.fetchSpesenRates({
+      apiKey: aiSettings.apiKey,
+      model: aiSettings.model,
+      countries,
+      enableWebSearch: aiSettings.enableWebSearch,
+    });
+
+    const results = {};
+    const missing = [];
+    for (const country of countries) {
+      if (parsed[country]) {
+        results[country] = parsed[country];
+      } else {
+        missing.push(country);
+      }
+    }
+
+    return {
+      ok: true,
+      results,
+      message:
+        missing.length > 0
+          ? `Hinweis: für folgende Länder konnte kein Satz ermittelt werden: ${missing.join(', ')}.`
+          : null,
+    };
+  } catch (err) {
+    const message = err instanceof AIProviderError ? err.message : 'Unbekannter Fehler bei der KI-Abfrage.';
+    return { ok: false, message: `Spesen-Aktualisierung fehlgeschlagen: ${message}` };
+  }
+}

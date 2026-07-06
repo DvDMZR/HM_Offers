@@ -18,8 +18,10 @@ function deriveTotalDays(totalHours, hoursPerDay) {
 
 function derivePackageMetrics(packageInput, settings) {
   const { hoursOnSite, travels } = packageInput;
+  // Paketspezifische Reisestunden je Round-Trip haben Vorrang vor dem globalen Wert
+  const perTrip = packageInput.hoursPerRoundTrip ?? settings.hoursPerRoundTrip;
   const daysOnSite = deriveDaysOnSite(hoursOnSite, settings.hoursPerDay);
-  const travelHours = deriveTravelHours(travels, settings.hoursPerRoundTrip);
+  const travelHours = deriveTravelHours(travels, perTrip);
   const totalHours = deriveTotalHours(hoursOnSite, travelHours);
   const totalDays = deriveTotalDays(totalHours, settings.hoursPerDay);
   return { hoursOnSite, travels, daysOnSite, travelHours, totalHours, totalDays };

@@ -94,7 +94,7 @@ function exportOfferPdf({ offer, packageMetrics, selectedPackage, calcResult, se
         ['Flugkosten gesamt', formatCurrencyEUR(calcResult.flugkostenGesamt)],
         ['Mietwagenkosten gesamt', formatCurrencyEUR(calcResult.mietwagenGesamt)],
         ['Zwischensumme', formatCurrencyEUR(calcResult.zwischensumme)],
-        [`Aufschlag (${settings.marginPercent}%)`, formatCurrencyEUR(calcResult.aufschlag)],
+        [`VK-Anpassung (${settings.marginPercent}%)`, formatCurrencyEUR(calcResult.aufschlag)],
       ],
       theme: 'grid',
       headStyles: { fillColor: [30, 41, 59] },

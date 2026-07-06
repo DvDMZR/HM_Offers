@@ -6,10 +6,14 @@ document.addEventListener('alpine:init', () => {
     settings: HMState.loadSettings(),
     packages: HMState.loadPackages(),
     offer: HMState.loadCurrentOffer(),
+    spesen: HMState.loadSpesen(),
     settingsErrors: {},
     packageErrors: {},
     aiLoading: false,
     aiMessage: null, // { type: 'error' | 'info', text }
+    spesenLoading: false,
+    spesenMessage: null,
+    newSpesenCountry: '',
     showApiKey: false,
     aiProviderOptions: Object.values(AI_PROVIDERS),
     aiProviderLabels: AI_PROVIDER_LABELS,
@@ -36,21 +40,25 @@ document.addEventListener('alpine:init', () => {
     get lineItems() {
       return buildLineItems(this.packageMetrics, this.offer.costInputs, this.calcResult);
     },
-    get packageRows() {
-      return packageRowsWithMetrics(this.packages, this.settings);
+    get countrySuggestions() {
+      const stored = this.spesen.list.map((e) => e.country);
+      return [...new Set([...stored, ...COUNTRY_SUGGESTIONS])];
     },
 
-    iconGlyph(source) {
-      return ICON_GLYPH[source] || ICON_GLYPH.calc;
+    sourceBadge(source) {
+      return SOURCE_BADGE[source] || SOURCE_BADGE.calc;
     },
-    iconTitle(source) {
-      return ICON_TITLE[source] || ICON_TITLE.calc;
+    sourceTitle(source) {
+      return SOURCE_TITLE[source] || SOURCE_TITLE.calc;
     },
     formatCurrency(value) {
       return formatCurrencyEUR(value);
     },
     formatNumber(value, digits) {
       return formatNumberDE(value, digits);
+    },
+    formatDate(iso) {
+      return iso ? new Date(iso).toLocaleDateString('de-DE') : '–';
     },
 
     // --- Persistenz ---
@@ -75,6 +83,9 @@ document.addEventListener('alpine:init', () => {
     persistOffer() {
       HMState.saveCurrentOffer(this.offer);
     },
+    persistSpesen() {
+      HMState.saveSpesen(this.spesen);
+    },
 
     resetSettings() {
       this.settings = HMState.resetSettingsToDefaults();
@@ -87,7 +98,7 @@ document.addEventListener('alpine:init', () => {
 
     addPackage() {
       const id = makeNewPackageId(this.packages.list);
-      this.packages.list.push({ id, label: 'Neues Paket', hoursOnSite: 10, travels: 1 });
+      this.packages.list.push({ id, label: 'Neues Paket', hoursOnSite: 10, travels: 1, hoursPerRoundTrip: 20 });
       this.persistPackages();
     },
     removePackage(id) {
@@ -108,6 +119,88 @@ document.addEventListener('alpine:init', () => {
         lastUpdated: new Date().toISOString(),
       };
       this.persistOffer();
+    },
+
+    // --- Spesen-Datenbank ---
+    findSpesenEntry(country) {
+      const needle = (country || '').trim().toLowerCase();
+      if (!needle) return null;
+      return this.spesen.list.find((e) => e.country.trim().toLowerCase() === needle) || null;
+    },
+    upsertSpesen(country, value, rationale) {
+      const name = (country || '').trim();
+      if (!name || typeof value !== 'number') return;
+      const entry = this.findSpesenEntry(name);
+      const timestamp = new Date().toISOString();
+      if (entry) {
+        entry.value = value;
+        entry.rationale = rationale || entry.rationale;
+        entry.lastUpdated = timestamp;
+      } else {
+        this.spesen.list.push({ country: name, value, rationale: rationale || '', lastUpdated: timestamp });
+        this.spesen.list.sort((a, b) => a.country.localeCompare(b.country, 'de'));
+      }
+      this.persistSpesen();
+    },
+    // Bei Länderwechsel: gespeicherten Spesensatz automatisch übernehmen
+    onCountryChange() {
+      const entry = this.findSpesenEntry(this.offer.country);
+      if (entry && entry.value != null) {
+        this.offer.costInputs.spesensatzPerDay = {
+          value: entry.value,
+          source: 'db',
+          rationale: entry.rationale,
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+      this.persistOffer();
+    },
+    addSpesenCountry() {
+      const name = this.newSpesenCountry.trim();
+      if (!name) return;
+      if (this.findSpesenEntry(name)) {
+        this.spesenMessage = { type: 'error', text: `"${name}" ist bereits in der Spesen-Datenbank.` };
+        return;
+      }
+      this.spesen.list.push({ country: name, value: null, rationale: '', lastUpdated: null });
+      this.spesen.list.sort((a, b) => a.country.localeCompare(b.country, 'de'));
+      this.persistSpesen();
+      this.newSpesenCountry = '';
+      this.spesenMessage = null;
+    },
+    removeSpesen(country) {
+      this.spesen.list = this.spesen.list.filter((e) => e.country !== country);
+      this.persistSpesen();
+    },
+    onSpesenRateInput(country, rawValue) {
+      const entry = this.findSpesenEntry(country);
+      if (!entry) return;
+      entry.value = rawValue === '' ? null : Number(rawValue);
+      entry.rationale = 'Manuell eingetragen';
+      entry.lastUpdated = new Date().toISOString();
+      this.persistSpesen();
+    },
+    async updateAllSpesen() {
+      this.spesenLoading = true;
+      this.spesenMessage = null;
+      try {
+        const countries = this.spesen.list.map((e) => e.country);
+        const result = await runSpesenUpdate({ settings: this.settings, countries });
+        if (!result.ok) {
+          this.spesenMessage = { type: 'error', text: result.message };
+          return;
+        }
+        for (const [country, rate] of Object.entries(result.results)) {
+          this.upsertSpesen(country, rate.value, rate.rationale);
+        }
+        this.spesenMessage = result.message
+          ? { type: 'info', text: result.message }
+          : { type: 'info', text: 'Alle Spesensätze wurden aktualisiert.' };
+        // Falls das aktuelle Angebot ein Land aus der Datenbank nutzt: Wert übernehmen
+        this.onCountryChange();
+      } finally {
+        this.spesenLoading = false;
+      }
     },
 
     // --- KI Smart Fill ---
@@ -132,9 +225,18 @@ document.addEventListener('alpine:init', () => {
         }
         this.persistOffer();
 
+        // Ermittelten Spesensatz in der Datenbank ablegen
+        if (result.results.spesensatzPerDay) {
+          this.upsertSpesen(
+            this.offer.country,
+            result.results.spesensatzPerDay.value,
+            result.results.spesensatzPerDay.rationale
+          );
+        }
+
         this.aiMessage = result.message
           ? { type: 'info', text: result.message }
-          : { type: 'info', text: 'KI-Werte erfolgreich übernommen.' };
+          : { type: 'info', text: 'Kosten erfolgreich ermittelt und übernommen.' };
       } finally {
         this.aiLoading = false;
       }
