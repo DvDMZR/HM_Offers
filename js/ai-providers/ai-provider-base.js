@@ -56,15 +56,30 @@ function stripMarkdownFences(text) {
     .trim();
 }
 
+// Manche Modelle (v.a. mit Web-Grounding) umgeben das JSON mit erläuterndem Text —
+// als Fallback wird der äußerste { … }-Block extrahiert.
+function parseJSONLenient(rawText) {
+  const cleaned = stripMarkdownFences(rawText);
+  try {
+    return JSON.parse(cleaned);
+  } catch (firstErr) {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end <= start) {
+      throw new AIProviderError('Antwort konnte nicht als JSON geparst werden.', firstErr);
+    }
+    try {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    } catch (err) {
+      throw new AIProviderError('Antwort konnte nicht als JSON geparst werden.', err);
+    }
+  }
+}
+
 // Validiert pro Feld einzeln: unvollständige/fehlerhafte Antworten führen nicht zum
 // Totalverlust — gültige Felder werden übernommen, ungültige bleiben 'unset'.
 function parseAndValidateJSON(rawText) {
-  let parsed;
-  try {
-    parsed = JSON.parse(stripMarkdownFences(rawText));
-  } catch (err) {
-    throw new AIProviderError('Antwort konnte nicht als JSON geparst werden.', err);
-  }
+  const parsed = parseJSONLenient(rawText);
 
   const result = {};
   for (const field of EXPECTED_FIELDS) {
@@ -86,12 +101,7 @@ function parseAndValidateJSON(rawText) {
 
 // Antwort der Spesen-Abfrage: Map Land -> { value, rationale }; ungültige Einträge werden null.
 function parseSpesenRatesJSON(rawText, countries) {
-  let parsed;
-  try {
-    parsed = JSON.parse(stripMarkdownFences(rawText));
-  } catch (err) {
-    throw new AIProviderError('Antwort konnte nicht als JSON geparst werden.', err);
-  }
+  const parsed = parseJSONLenient(rawText);
 
   const result = {};
   for (const country of countries) {

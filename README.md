@@ -16,10 +16,11 @@ Es gibt keinen Build-Schritt und keinen Server. Zwei Wege, das Tool zu öffnen:
 
 ## KI-Integration (Smart Fill)
 
-Unter **Einstellungen → KI- & API-Einstellungen** einen eigenen API-Key hinterlegen
-(Standard-Provider: Anthropic Claude). Danach kann in der Projektauswahl über
-"KI-Reisekosten live abrufen" eine Schätzung für Spesensatz, Flug, Hotel und Mietwagen
-abgerufen werden. Alle Werte bleiben danach frei editierbar.
+Unter **Einstellungen → KI & API** einen eigenen API-Key hinterlegen. Unterstützte
+Provider: **Anthropic Claude** (Key: `sk-ant-…`, mit Web-Search) und **Google Gemini**
+(Key: `AIza…`, mit Google-Search-Grounding; Key erhältlich über Google AI Studio).
+Danach kann in der Kalkulation über "Kosten ermitteln" eine Schätzung für Spesensatz,
+Flug, Hotel und Mietwagen abgerufen werden. Alle Werte bleiben danach frei editierbar.
 
 **Sicherheitshinweis**: Der API-Key wird ausschließlich lokal im Browser
 (`localStorage`) gespeichert und bei jeder Anfrage direkt an den KI-Anbieter gesendet.

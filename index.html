@@ -304,7 +304,7 @@
         <div class="grid-2">
           <div class="field">
             <label>Provider</label>
-            <select x-model="settings.ai.provider" @change="persistSettings()" x-init="$nextTick(() => { $el.value = settings.ai.provider })">
+            <select x-model="settings.ai.provider" @change="onProviderChange()" x-init="$nextTick(() => { $el.value = settings.ai.provider })">
               <template x-for="p in aiProviderOptions" :key="p">
                 <option :value="p" x-text="aiProviderLabels[p]"></option>
               </template>
@@ -317,7 +317,7 @@
           <div class="field span-2">
             <label>API-Key</label>
             <div class="api-key-row">
-              <input :type="showApiKey ? 'text' : 'password'" x-model="settings.ai.apiKey" @change="persistSettings()" placeholder="sk-ant-…" />
+              <input :type="showApiKey ? 'text' : 'password'" x-model="settings.ai.apiKey" @change="persistSettings()" :placeholder="apiKeyPlaceholder" />
               <button type="button" class="btn btn-secondary" @click="showApiKey = !showApiKey" x-text="showApiKey ? 'Verbergen' : 'Anzeigen'"></button>
             </div>
           </div>
