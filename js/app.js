@@ -1,10 +1,23 @@
 // Alpine-Root-Komponente: verdrahtet State, Berechnung, KI-Aufruf, Settings & PDF-Export
 
+// Ältere gespeicherte Pakete (vor Einführung von costDefaults/hoursPerRoundTrip)
+// werden hier defensiv aufgefüllt, da localStorage-Arrays nicht automatisch
+// mit neuen Default-Feldern gemergt werden (siehe state.js: deepMerge ersetzt
+// Arrays komplett statt sie feldweise zusammenzuführen).
+function backfillPackages(packages) {
+  packages.list = packages.list.map((p) => ({
+    hoursPerRoundTrip: 20,
+    ...p,
+    costDefaults: { ...defaultCostToggles(), ...(p.costDefaults || {}) },
+  }));
+  return packages;
+}
+
 document.addEventListener('alpine:init', () => {
   Alpine.data('hmApp', () => ({
     activeView: 'dashboard',
     settings: HMState.loadSettings(),
-    packages: HMState.loadPackages(),
+    packages: backfillPackages(HMState.loadPackages()),
     offer: HMState.loadCurrentOffer(),
     spesen: HMState.loadSpesen(),
     settingsErrors: {},
@@ -40,18 +53,25 @@ document.addEventListener('alpine:init', () => {
     },
     get resolvedCostInputs() {
       const ci = this.offer.costInputs;
+      const resolve = (field) => (field.enabled ? field.value || 0 : 0);
       return {
-        spesensatzPerDay: ci.spesensatzPerDay.value || 0,
-        flightRoundTrip: ci.flightRoundTrip.value || 0,
-        hotelPerNight: ci.hotelPerNight.value || 0,
-        rentalCarPerDay: ci.rentalCarPerDay.value || 0,
+        spesensatzPerDay: resolve(ci.spesensatzPerDay),
+        flightRoundTrip: resolve(ci.flightRoundTrip),
+        hotelPerNight: resolve(ci.hotelPerNight),
+        rentalCarPerDay: resolve(ci.rentalCarPerDay),
+        fuelPerDay: resolve(ci.fuelPerDay),
       };
     },
     get calcResult() {
       return calculateOffer(this.packageMetrics, this.resolvedCostInputs, this.settings);
     },
     get lineItems() {
-      return buildLineItems(this.packageMetrics, this.offer.costInputs, this.calcResult);
+      const items = buildLineItems(this.packageMetrics, this.offer.costInputs, this.calcResult);
+      for (const item of items) {
+        if (item.key === 'hotelkostenGesamt') item.markupPercent = this.settings.markups.hotelPercent;
+        if (item.key === 'mietwagenGesamt') item.markupPercent = this.settings.markups.rentalCarPercent;
+      }
+      return items;
     },
     get countrySuggestions() {
       const stored = this.spesen.list.map((e) => e.country);
@@ -111,7 +131,14 @@ document.addEventListener('alpine:init', () => {
 
     addPackage() {
       const id = makeNewPackageId(this.packages.list);
-      this.packages.list.push({ id, label: 'Neues Paket', hoursOnSite: 10, travels: 1, hoursPerRoundTrip: 20 });
+      this.packages.list.push({
+        id,
+        label: 'Neues Paket',
+        hoursOnSite: 10,
+        travels: 1,
+        hoursPerRoundTrip: 20,
+        costDefaults: defaultCostToggles(),
+      });
       this.persistPackages();
     },
     removePackage(id) {
@@ -123,14 +150,39 @@ document.addEventListener('alpine:init', () => {
       this.persistPackages();
     },
 
+    // Beim Wechsel des Beratungspakets: Standard-Kosten-Auswahl des neuen Pakets
+    // übernehmen (z.B. Tagestrip-Paket ohne Hotel). Bereits erfasste Werte/Quellen
+    // bleiben erhalten, nur der Ein-/Aus-Status wird zurückgesetzt.
+    onPackageChange() {
+      const toggles = this.selectedPackage.costDefaults || defaultCostToggles();
+      this.offer.costInputs.spesensatzPerDay.enabled = toggles.spesen;
+      this.offer.costInputs.hotelPerNight.enabled = toggles.hotel;
+      this.offer.costInputs.flightRoundTrip.enabled = toggles.flug;
+      this.offer.costInputs.rentalCarPerDay.enabled = toggles.mietwagen;
+      this.persistOffer();
+    },
+
     onCostFieldInput(field, rawValue) {
       const value = rawValue === '' || rawValue === null ? null : Number(rawValue);
+      const prevEnabled = this.offer.costInputs[field].enabled;
       this.offer.costInputs[field] = {
         value,
         source: value === null ? 'unset' : 'manual',
         rationale: '',
         lastUpdated: new Date().toISOString(),
+        enabled: prevEnabled,
       };
+      this.persistOffer();
+    },
+    onCostFieldToggle(field, checked) {
+      const entry = this.offer.costInputs[field];
+      entry.enabled = checked;
+      // Beim erstmaligen Aktivieren der Benzinkosten den Standardwert aus den Settings übernehmen
+      if (field === 'fuelPerDay' && checked && (entry.value === null || entry.value === undefined)) {
+        entry.value = this.settings.fuel.defaultPerDay || 0;
+        entry.source = 'manual';
+        entry.lastUpdated = new Date().toISOString();
+      }
       this.persistOffer();
     },
 
@@ -159,11 +211,13 @@ document.addEventListener('alpine:init', () => {
     onCountryChange() {
       const entry = this.findSpesenEntry(this.offer.country);
       if (entry && entry.value != null) {
+        const prevEnabled = this.offer.costInputs.spesensatzPerDay.enabled;
         this.offer.costInputs.spesensatzPerDay = {
           value: entry.value,
           source: 'db',
           rationale: entry.rationale,
           lastUpdated: new Date().toISOString(),
+          enabled: prevEnabled,
         };
       }
       this.persistOffer();
@@ -234,7 +288,8 @@ document.addEventListener('alpine:init', () => {
         }
 
         for (const [field, fieldResult] of Object.entries(result.results)) {
-          this.offer.costInputs[field] = fieldResult;
+          const prevEnabled = this.offer.costInputs[field].enabled;
+          this.offer.costInputs[field] = { ...fieldResult, enabled: prevEnabled };
         }
         this.persistOffer();
 

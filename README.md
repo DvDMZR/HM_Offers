@@ -35,6 +35,23 @@ Angebot für dasselbe Land direkt übernommen. Unter **Einstellungen →
 Spesen-Datenbank** lassen sich Länder hinzufügen, Sätze manuell korrigieren und alle
 gespeicherten Sätze per Knopfdruck über die KI aktualisieren.
 
+## Kostenpositionen abwählen & Einzelaufschläge
+
+Jede Kostenposition (Spesen, Hotel, Flug, Mietwagen sowie die optionale Position
+Benzinkosten) lässt sich in der Kalkulation über eine Checkbox ein- oder ausschließen —
+abgewählte Positionen fließen weder in die Zwischensumme noch ins PDF-Angebot ein.
+Jedes Beratungspaket kann in **Einstellungen → Beratungspakete** eigene
+Standardvorbelegungen definieren (z. B. ein Tagestrip-Paket ohne Hotel); beim Wechsel
+des Pakets in der Kalkulation wird diese Vorbelegung automatisch übernommen und bleibt
+weiterhin manuell änderbar.
+
+Unter **Einstellungen → Einzelaufschläge & Zusatzkosten** lassen sich prozentuale
+Einzelaufschläge auf Hotel- und Mietwagenkosten hinterlegen (zusätzlich zur globalen
+VK-Anpassung) sowie ein Standard-Tagessatz für optionale Benzinkosten. Einzelaufschläge
+werden in der Kalkulation als Hinweis-Badge angezeigt, tauchen aber nicht als eigene
+Zeile im PDF-Angebot auf. Die Kalkulation zeigt zudem je Position die zugrunde liegende
+Menge an (Nächte im Hotel, Miettage, Anzahl Anreisen).
+
 ## Persistenz
 
 Einstellungen, Paketdefinitionen, Spesensätze und das aktuelle Angebot werden

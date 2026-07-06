@@ -27,23 +27,47 @@ function derivePackageMetrics(packageInput, settings) {
   return { hoursOnSite, travels, daysOnSite, travelHours, totalHours, totalDays };
 }
 
-// Hinweis: Math.ceil wird bewusst NUR bei Hotel- und Mietwagenkosten angewendet
-// (ein angebrochener Tag vor Ort löst trotzdem eine volle Übernachtung/einen vollen
-// Miettag aus). Spesen und Honorare rechnen mit den unrundeten Werten.
+// Hinweis: Math.ceil wird bewusst NUR bei Hotel-, Mietwagen- und Benzinkosten
+// angewendet (ein angebrochener Tag vor Ort löst trotzdem eine volle Übernachtung/
+// einen vollen Miettag aus). Spesen und Honorare rechnen mit den unrundeten Werten.
+//
+// costInputs enthält bereits aufgelöste Rohwerte (0, falls die Position abgewählt
+// wurde) für: spesensatzPerDay, flightRoundTrip, hotelPerNight, rentalCarPerDay,
+// fuelPerDay. Einzelaufschläge (Hotel/Mietwagen) kommen aus settings.markups und
+// werden NUR auf die jeweilige Position angewendet (nicht auf die anderen Positionen).
 function calculateOffer(packageMetrics, costInputs, settings) {
   const { hoursOnSite, travels, daysOnSite, travelHours, totalDays } = packageMetrics;
   const { hourlyRate, marginPercent } = settings;
-  const { spesensatzPerDay, flightRoundTrip, hotelPerNight, rentalCarPerDay } = costInputs;
+  const hotelMarkupPercent = settings.markups?.hotelPercent || 0;
+  const rentalCarMarkupPercent = settings.markups?.rentalCarPercent || 0;
+  const { spesensatzPerDay, flightRoundTrip, hotelPerNight, rentalCarPerDay, fuelPerDay } = costInputs;
+
+  const nights = Math.ceil(daysOnSite);
 
   const honorarVorOrt = hoursOnSite * hourlyRate;
   const honorarReisezeit = travelHours * hourlyRate;
   const spesenGesamt = spesensatzPerDay * totalDays;
-  const hotelkostenGesamt = hotelPerNight * Math.ceil(daysOnSite);
+
+  const hotelkostenRoh = hotelPerNight * nights;
+  const hotelAufschlagBetrag = hotelkostenRoh * (hotelMarkupPercent / 100);
+  const hotelkostenGesamt = hotelkostenRoh + hotelAufschlagBetrag;
+
   const flugkostenGesamt = flightRoundTrip * travels;
-  const mietwagenGesamt = rentalCarPerDay * Math.ceil(daysOnSite);
+
+  const mietwagenRoh = rentalCarPerDay * nights;
+  const mietwagenAufschlagBetrag = mietwagenRoh * (rentalCarMarkupPercent / 100);
+  const mietwagenGesamt = mietwagenRoh + mietwagenAufschlagBetrag;
+
+  const benzinkostenGesamt = (fuelPerDay || 0) * nights;
 
   const zwischensumme =
-    honorarVorOrt + honorarReisezeit + spesenGesamt + hotelkostenGesamt + flugkostenGesamt + mietwagenGesamt;
+    honorarVorOrt +
+    honorarReisezeit +
+    spesenGesamt +
+    hotelkostenGesamt +
+    flugkostenGesamt +
+    mietwagenGesamt +
+    benzinkostenGesamt;
   const aufschlag = zwischensumme * (marginPercent / 100);
   const vkPreis = zwischensumme + aufschlag;
 
@@ -51,9 +75,14 @@ function calculateOffer(packageMetrics, costInputs, settings) {
     honorarVorOrt,
     honorarReisezeit,
     spesenGesamt,
+    hotelkostenRoh,
+    hotelAufschlagBetrag,
     hotelkostenGesamt,
     flugkostenGesamt,
+    mietwagenRoh,
+    mietwagenAufschlagBetrag,
     mietwagenGesamt,
+    benzinkostenGesamt,
     zwischensumme,
     aufschlag,
     vkPreis,

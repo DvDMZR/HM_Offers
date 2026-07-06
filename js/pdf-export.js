@@ -82,20 +82,27 @@ function exportOfferPdf({ offer, packageMetrics, selectedPackage, calcResult, se
   y = doc.lastAutoTable.finalY + 10;
 
   // --- Kostenübersicht ---
+  // Nur aktive (nicht abgewählte) Positionen werden aufgeführt; Einzelaufschläge auf
+  // Hotel/Mietwagen sind bereits in den Beträgen enthalten, erscheinen aber nicht als
+  // eigene Zeile — das bleibt internes Detail der Kalkulation.
   if (offer.showDetailedCosts) {
+    const ci = offer.costInputs;
+    const rows = [
+      ['Honorar Vor-Ort', formatCurrencyEUR(calcResult.honorarVorOrt)],
+      ['Honorar Reisezeit', formatCurrencyEUR(calcResult.honorarReisezeit)],
+    ];
+    if (ci.spesensatzPerDay.enabled) rows.push(['Spesen gesamt', formatCurrencyEUR(calcResult.spesenGesamt)]);
+    if (ci.hotelPerNight.enabled) rows.push(['Hotelkosten gesamt', formatCurrencyEUR(calcResult.hotelkostenGesamt)]);
+    if (ci.flightRoundTrip.enabled) rows.push(['Flugkosten gesamt', formatCurrencyEUR(calcResult.flugkostenGesamt)]);
+    if (ci.rentalCarPerDay.enabled) rows.push(['Mietwagenkosten gesamt', formatCurrencyEUR(calcResult.mietwagenGesamt)]);
+    if (ci.fuelPerDay.enabled) rows.push(['Benzinkosten gesamt', formatCurrencyEUR(calcResult.benzinkostenGesamt)]);
+    rows.push(['Zwischensumme', formatCurrencyEUR(calcResult.zwischensumme)]);
+    rows.push([`VK-Anpassung (${settings.marginPercent}%)`, formatCurrencyEUR(calcResult.aufschlag)]);
+
     doc.autoTable({
       startY: y,
       head: [['Position', 'Betrag']],
-      body: [
-        ['Honorar Vor-Ort', formatCurrencyEUR(calcResult.honorarVorOrt)],
-        ['Honorar Reisezeit', formatCurrencyEUR(calcResult.honorarReisezeit)],
-        ['Spesen gesamt', formatCurrencyEUR(calcResult.spesenGesamt)],
-        ['Hotelkosten gesamt', formatCurrencyEUR(calcResult.hotelkostenGesamt)],
-        ['Flugkosten gesamt', formatCurrencyEUR(calcResult.flugkostenGesamt)],
-        ['Mietwagenkosten gesamt', formatCurrencyEUR(calcResult.mietwagenGesamt)],
-        ['Zwischensumme', formatCurrencyEUR(calcResult.zwischensumme)],
-        [`VK-Anpassung (${settings.marginPercent}%)`, formatCurrencyEUR(calcResult.aufschlag)],
-      ],
+      body: rows,
       theme: 'grid',
       headStyles: { fillColor: [30, 41, 59] },
       margin: { left: 14, right: 14 },
