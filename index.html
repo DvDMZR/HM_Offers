@@ -82,7 +82,7 @@
           </div>
           <div class="field span-2">
             <label>Beratungspaket</label>
-            <select x-model="offer.packageId" @change="persistOffer()" x-init="$nextTick(() => { $el.value = offer.packageId })">
+            <select x-model="offer.packageId" @change="onPackageChange()" x-init="$nextTick(() => { $el.value = offer.packageId })">
               <template x-for="pkg in packages.list" :key="pkg.id">
                 <option :value="pkg.id" x-text="pkg.label"></option>
               </template>
@@ -115,19 +115,35 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th></th>
                 <th>Position</th>
                 <th>Quelle</th>
+                <th>Menge</th>
                 <th>Eingabewert</th>
                 <th class="num">Betrag</th>
               </tr>
             </thead>
             <tbody>
               <template x-for="item in lineItems" :key="item.key">
-                <tr>
+                <tr :style="item.toggleable && !item.enabled ? 'opacity:0.5' : ''">
+                  <td>
+                    <template x-if="item.toggleable">
+                      <input
+                        type="checkbox"
+                        :checked="item.enabled"
+                        @change="onCostFieldToggle(item.field, $event.target.checked)"
+                        :title="item.optional ? 'Optionale Position ein-/ausblenden' : 'Position in der Kalkulation berücksichtigen'"
+                      />
+                    </template>
+                  </td>
                   <td x-text="item.label"></td>
                   <td>
                     <span class="badge" :class="'badge-' + item.icon" :title="item.rationale || sourceTitle(item.icon)" x-text="sourceBadge(item.icon)"></span>
+                    <template x-if="item.markupPercent > 0">
+                      <span class="badge badge-calc" :title="'Einzelaufschlag: ' + formatCurrency(item.markupAmount)" x-text="'+' + formatNumber(item.markupPercent, 0) + '%'"></span>
+                    </template>
                   </td>
+                  <td class="muted" style="font-size:0.8rem" x-text="item.quantityLabel || ''"></td>
                   <td>
                     <template x-if="item.editable">
                       <input
@@ -135,6 +151,7 @@
                         step="0.01"
                         style="width:130px"
                         :value="item.inputValue"
+                        :disabled="item.toggleable && !item.enabled"
                         :placeholder="item.inputLabel"
                         @change="onCostFieldInput(item.field, $event.target.value)"
                         :title="item.rationale || ''"
@@ -147,15 +164,15 @@
             </tbody>
             <tfoot>
               <tr class="totals-row">
-                <td colspan="3" class="muted">Zwischensumme</td>
+                <td colspan="5" class="muted">Zwischensumme</td>
                 <td class="num" x-text="formatCurrency(calcResult.zwischensumme)"></td>
               </tr>
               <tr class="totals-row">
-                <td colspan="3" class="muted">VK-Anpassung (<span x-text="formatNumber(settings.marginPercent, 0)"></span>%)</td>
+                <td colspan="5" class="muted">VK-Anpassung (<span x-text="formatNumber(settings.marginPercent, 0)"></span>%)</td>
                 <td class="num" x-text="formatCurrency(calcResult.aufschlag)"></td>
               </tr>
               <tr class="vk-row">
-                <td colspan="3">Finaler Verkaufspreis</td>
+                <td colspan="5">Finaler Verkaufspreis</td>
                 <td class="num" x-text="formatCurrency(calcResult.vkPreis)"></td>
               </tr>
             </tfoot>
@@ -222,6 +239,7 @@
                 <th class="num">Reisestunden</th>
                 <th class="num">Gesamtstunden</th>
                 <th class="num">Gesamttage</th>
+                <th>Standard</th>
                 <th></th>
               </tr>
             </thead>
@@ -236,12 +254,24 @@
                   <td class="num muted" x-text="formatNumber(derivePackageMetrics(pkg, settings).travelHours)"></td>
                   <td class="num muted" x-text="formatNumber(derivePackageMetrics(pkg, settings).totalHours)"></td>
                   <td class="num muted" x-text="formatNumber(derivePackageMetrics(pkg, settings).totalDays)"></td>
+                  <td>
+                    <div style="display:flex;flex-direction:column;gap:0.15rem;font-size:0.75rem">
+                      <label class="checkbox-label"><input type="checkbox" x-model="pkg.costDefaults.spesen" @change="persistPackages()" /> Spesen</label>
+                      <label class="checkbox-label"><input type="checkbox" x-model="pkg.costDefaults.hotel" @change="persistPackages()" /> Hotel</label>
+                      <label class="checkbox-label"><input type="checkbox" x-model="pkg.costDefaults.flug" @change="persistPackages()" /> Flug</label>
+                      <label class="checkbox-label"><input type="checkbox" x-model="pkg.costDefaults.mietwagen" @change="persistPackages()" /> Mietwagen</label>
+                    </div>
+                  </td>
                   <td><button class="btn-remove" @click="removePackage(pkg.id)" title="Paket löschen">✕</button></td>
                 </tr>
               </template>
             </tbody>
           </table>
         </div>
+        <p style="font-size:0.78rem;color:var(--text-faint);margin-top:0.5rem">
+          "Standard-Kosten" legt fest, welche Positionen bei Auswahl dieses Pakets in der Kalkulation
+          vorausgewählt sind (z. B. Tagestrip-Paket ohne Hotel). Lässt sich je Angebot weiterhin abwählen.
+        </p>
         <div class="actions-row">
           <button class="btn btn-secondary" @click="addPackage()">+ Paket hinzufügen</button>
           <button class="btn-link" @click="resetPackages()">Auf Standardpakete zurücksetzen</button>
@@ -297,6 +327,33 @@
         </div>
 
         <div x-show="spesenMessage" x-cloak class="notice" :class="spesenMessage && spesenMessage.type === 'error' ? 'notice-error' : 'notice-info'" x-text="spesenMessage && spesenMessage.text"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Einzelaufschläge &amp; Zusatzkosten</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Einzelaufschlag Hotel (%)</label>
+            <input type="number" step="1" x-model.number="settings.markups.hotelPercent" @change="persistSettings()" />
+            <p class="field-error" x-show="settingsErrors.hotelMarkupPercent" x-text="settingsErrors.hotelMarkupPercent"></p>
+          </div>
+          <div class="field">
+            <label>Einzelaufschlag Mietwagen (%)</label>
+            <input type="number" step="1" x-model.number="settings.markups.rentalCarPercent" @change="persistSettings()" />
+            <p class="field-error" x-show="settingsErrors.rentalCarMarkupPercent" x-text="settingsErrors.rentalCarMarkupPercent"></p>
+          </div>
+          <div class="field">
+            <label>Benzinkosten pro Tag, Standardwert (EUR)</label>
+            <input type="number" step="0.01" x-model.number="settings.fuel.defaultPerDay" @change="persistSettings()" />
+            <p class="field-error" x-show="settingsErrors.fuelDefaultPerDay" x-text="settingsErrors.fuelDefaultPerDay"></p>
+          </div>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-faint);margin-top:0.25rem">
+          Einzelaufschläge werden nur auf die jeweilige Position angewendet (Hotel bzw. Mietwagen) und zusätzlich
+          zur globalen VK-Anpassung berechnet. Sie werden in der Kalkulation als Hinweis angezeigt, erscheinen aber
+          nicht als eigene Zeile im PDF-Angebot. Benzinkosten sind eine optionale Zusatzposition, die pro Angebot
+          in der Kalkulation über die Checkbox bei "Benzinkosten gesamt" aktiviert werden kann.
+        </p>
       </div>
 
       <div class="card">

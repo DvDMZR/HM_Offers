@@ -31,6 +31,9 @@ Liefere ausschließlich ein JSON-Objekt (keinen Fließtext, keine Markdown-Codeb
   "hotelPerNight":    { "value": <number, EUR>, "rationale": "<kurze Quelle, 3-4 Sterne Business-Hotel>" },
   "rentalCarPerDay":  { "value": <number, EUR>, "rationale": "<kurze Quelle>" }
 }
+Für rentalCarPerDay gilt: suche ausschließlich nach Mietwagen der Mittelklasse
+(z.B. VW Golf, Ford Focus oder vergleichbare Kategorie) — keine Kleinwagen, keine
+Premium-/Luxusklasse.
 Nutze aktuelle Web-Informationen falls verfügbar. Alle Werte in EUR, gerundet auf 2 Nachkommastellen.`;
 }
 

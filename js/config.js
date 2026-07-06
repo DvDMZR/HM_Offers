@@ -36,12 +36,19 @@ const AI_PROVIDER_KEY_PLACEHOLDERS = {
 };
 
 const DEFAULT_SETTINGS = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   hourlyRate: 80,
   marginPercent: 10,
   hoursPerDay: 10,
   hoursPerRoundTrip: 20,
   defaultDepartureAirport: 'FRA',
+  markups: {
+    hotelPercent: 0,
+    rentalCarPercent: 0,
+  },
+  fuel: {
+    defaultPerDay: 0,
+  },
   ai: {
     provider: AI_PROVIDERS.ANTHROPIC,
     apiKey: '',
@@ -50,13 +57,18 @@ const DEFAULT_SETTINGS = {
   },
 };
 
+// Welche Kostenpositionen für ein Paket standardmäßig aktiv sind (z.B. Tagestrips ohne Hotel)
+function defaultCostToggles() {
+  return { spesen: true, hotel: true, flug: true, mietwagen: true };
+}
+
 const DEFAULT_PACKAGES = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   list: [
-    { id: 'package4', label: 'Package 4', hoursOnSite: 22, travels: 1, hoursPerRoundTrip: 20 },
-    { id: 'package1', label: 'Package 1', hoursOnSite: 57.5, travels: 1, hoursPerRoundTrip: 20 },
-    { id: 'package2', label: 'Package 2', hoursOnSite: 108, travels: 2, hoursPerRoundTrip: 20 },
-    { id: 'package3', label: 'Package 3', hoursOnSite: 125, travels: 3, hoursPerRoundTrip: 20 },
+    { id: 'package4', label: 'Package 4', hoursOnSite: 22, travels: 1, hoursPerRoundTrip: 20, costDefaults: defaultCostToggles() },
+    { id: 'package1', label: 'Package 1', hoursOnSite: 57.5, travels: 1, hoursPerRoundTrip: 20, costDefaults: defaultCostToggles() },
+    { id: 'package2', label: 'Package 2', hoursOnSite: 108, travels: 2, hoursPerRoundTrip: 20, costDefaults: defaultCostToggles() },
+    { id: 'package3', label: 'Package 3', hoursOnSite: 125, travels: 3, hoursPerRoundTrip: 20, costDefaults: defaultCostToggles() },
   ],
 };
 
@@ -66,13 +78,14 @@ const DEFAULT_SPESEN = {
   list: [], // { country, value, rationale, lastUpdated }
 };
 
-function emptyCostField() {
-  return { value: null, source: 'unset', rationale: '', lastUpdated: null };
+function emptyCostField(enabled = true) {
+  return { value: null, source: 'unset', rationale: '', lastUpdated: null, enabled };
 }
 
 function defaultCurrentOffer() {
+  const toggles = defaultCostToggles();
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     customerName: '',
     projectTitle: '',
     country: '',
@@ -80,10 +93,11 @@ function defaultCurrentOffer() {
     travelDateRange: { from: null, to: null },
     packageId: DEFAULT_PACKAGES.list[1].id, // Package 1
     costInputs: {
-      spesensatzPerDay: emptyCostField(),
-      flightRoundTrip: emptyCostField(),
-      hotelPerNight: emptyCostField(),
-      rentalCarPerDay: emptyCostField(),
+      spesensatzPerDay: emptyCostField(toggles.spesen),
+      flightRoundTrip: emptyCostField(toggles.flug),
+      hotelPerNight: emptyCostField(toggles.hotel),
+      rentalCarPerDay: emptyCostField(toggles.mietwagen),
+      fuelPerDay: emptyCostField(false),
     },
     showDetailedCosts: true,
     offerValidityDays: 30,

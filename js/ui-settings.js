@@ -6,6 +6,9 @@ function validateSettings(settings) {
   if (!(settings.marginPercent >= 0)) errors.marginPercent = 'Darf nicht negativ sein.';
   if (!(settings.hoursPerDay > 0)) errors.hoursPerDay = 'Muss größer als 0 sein (Divisor).';
   if (!(settings.hoursPerRoundTrip >= 0)) errors.hoursPerRoundTrip = 'Darf nicht negativ sein.';
+  if (!(settings.markups.hotelPercent >= 0)) errors.hotelMarkupPercent = 'Darf nicht negativ sein.';
+  if (!(settings.markups.rentalCarPercent >= 0)) errors.rentalCarMarkupPercent = 'Darf nicht negativ sein.';
+  if (!(settings.fuel.defaultPerDay >= 0)) errors.fuelDefaultPerDay = 'Darf nicht negativ sein.';
   return { valid: Object.keys(errors).length === 0, errors };
 }
 
